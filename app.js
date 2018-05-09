@@ -1,24 +1,35 @@
+import {createUser, getPageURL} from "./domGenerator";
+import {makeErrorPage} from "./errorGenerator";
+
 function func() {
+    let arrMain = document.body.getElementsByTagName("main");
+    if (arrMain.length >0) {
+        for (let i=0; i<arrMain.length; i++) {
+            document.body.removeChild(arrMain[i]);
+        }
+    }
     let userLogin = document.getElementById("nickname").value;
-    fetch('https://api.github.com/users/'+userLogin)
+    fetch(getPageURL(userLogin))
         .then(function (response) {
-            return response.json();
+            if (response.status > 100 && response.status <= 400)
+                return response.json();
+            else if (response.status === 404) {
+                throw new Error("NOT FOUND");
+            }
+            else if (response.status > 400 && response.status < 500) {
+                throw new Error("SOME CLIENT ERROR");
+            }
+            else if (response.status > 500 && response.status < 600) {
+                throw new Error("SOME SERVER ERROR");
+            }
+            else {
+                throw new Error("UNEXPECTED STATE");
+            }
         })
-        .then(function (user) {
-            document.getElementById("main").setAttribute("class", "shown");
-            document.getElementById("p1").innerHTML = user.login;
-            document.getElementById("name").innerHTML = user.name;
-            document.getElementById("picture").setAttribute("src", user.avatar_url);
-            document.getElementById("location").innerHTML = user.location;
-            document.getElementById("bio").innerHTML = user.bio;
-            document.getElementById("company").innerHTML = user.company;
-            document.getElementById("email").innerHTML = user.email;
-            (!(user.company) || user.company==="") ? document.getElementById("pCompany").setAttribute("class", "hidden") :  document.getElementById("pCompany").setAttribute("class", "rows");
-            (!(user.location) || user.location==="") ? document.getElementById("pLocation").setAttribute("class", "hidden"):  document.getElementById("pLocation").setAttribute("class", "rows");
-            (!(user.email) || user.email==="") ? document.getElementById("pEmail").setAttribute("class", "hidden") :  document.getElementById("pEmail").setAttribute("class", "rows");
-            (!(user.blog) || user.blog==="") ?  document.getElementById("pBlog").setAttribute("class", "hidden") :  document.getElementById("pBlog").setAttribute("class", "rows");
-            document.getElementById("blog").innerHTML = user.blog;
-            document.getElementById("blog").setAttribute("href", user.blog);
-        })
-        .catch(alert);
+        .then(user => createUser(user))
+        .catch((e)=>makeErrorPage(e));
 }
+
+document.getElementById("btnSubmit").addEventListener("click", func);
+
+export {func}
